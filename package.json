@@ -1,0 +1,23 @@
+{
+  "name": "Test",
+  "productName": "Test",
+  "description": "My Electron application description",
+  "keywords": [],
+  "main": "./main.js",
+  "version": "1.0.0",
+  "author": "fuerpa2",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@electron/packager": "18.3.6",
+    "@electron/remote": "2.1.2",
+    "electron-builder": "26.0.17",
+    "electron-package": "0.1.0",
+    "ssh2": "1.16.0",
+    "@xterm/xterm": "5.6.0-beta.114"
+  },
+  "devDependencies": {
+    "electron": "35.0.0"
+  }
+}
