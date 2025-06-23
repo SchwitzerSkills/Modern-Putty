@@ -4,24 +4,36 @@
   <meta charset="UTF-8">
   <title>Electron PuTTY</title>
   <link rel="stylesheet" href="./node_modules/@xterm/xterm/css/xterm.css">
-  <style>
+<style>
     body { margin:0; display:flex; flex-direction:column; height:100vh; }
-    #toolbar { display:flex; }
-    #panes   { display:flex; flex:1; }
-    #panes > div { flex:1; }
+    #toolbar { display:flex; background:#222; color:#eee; padding:4px; }
+    #tabs   { display:flex; gap:4px; }
+    #panes  { position:relative; flex:1; }
+    #panes > div {
+      position:absolute;
+      top:32px; left:0; right:0; bottom:0;
+      display:none;
+    }
     dialog { border:none; border-radius:6px; padding:1em; }
     dialog::backdrop { background:rgba(0,0,0,0.3); }
     label { display:block; margin-bottom:0.5em; }
     input { width:100%; box-sizing:border-box; }
     menu { display:flex; justify-content:flex-end; gap:0.5em; }
+    .tab {
+      padding:4px 8px; background:#444; color:#fff; cursor:pointer;
+      display:flex; align-items:center; gap:4px;
+    }
+    .tab.active { background:#666; }
+    .tab .close { font-weight:bold; }
   </style>
 </head>
 <body>
-  <div id="toolbar">
+   <div id="toolbar">
+    <div id="tabs" style="display:flex; gap:4px"></div>
     <button id="new-tab">+ Tab</button>
     <button id="split-tab">Split</button>
   </div>
-  <div id="panes"></div>
+  <div id="panes" style="display:flex; flex:1; position:relative"></div>
 
   <dialog id="conn-dialog">
     <form method="dialog">

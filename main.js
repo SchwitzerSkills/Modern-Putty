@@ -58,3 +58,11 @@ ipcMain.on('ssh-input', (event, { connId, data }) => {
   const s = sessions[connId]?.stream;
   if (s) s.write(data);
 });
+ipcMain.handle('ssh-close', (event, connId) => {
+  const session = sessions[connId];
+  if (session) {
+    session.stream?.close();
+    session.conn.end();
+    delete sessions[connId];
+  }
+});
