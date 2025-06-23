@@ -2,38 +2,90 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Electron PuTTY</title>
+  <title>Electron PuTTY – Grid-Splits</title>
+
   <link rel="stylesheet" href="./node_modules/@xterm/xterm/css/xterm.css">
-<style>
-    body { margin:0; display:flex; flex-direction:column; height:100vh; }
-    #toolbar { display:flex; background:#222; color:#eee; padding:4px; }
-    #tabs   { display:flex; gap:4px; }
-    #panes  { position:relative; flex:1; }
-    #panes > div {
-      position:absolute;
-      top:32px; left:0; right:0; bottom:0;
-      display:none;
+
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #1e1e1e;
     }
-    dialog { border:none; border-radius:6px; padding:1em; }
-    dialog::backdrop { background:rgba(0,0,0,0.3); }
-    label { display:block; margin-bottom:0.5em; }
-    input { width:100%; box-sizing:border-box; }
-    menu { display:flex; justify-content:flex-end; gap:0.5em; }
+    #toolbar {
+      background: #222;
+      color: #eee;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    #new-tab {
+      margin-left: auto;
+    }
+    #panes {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+    .pane {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: none;
+      background: #1e1e1e;
+    }
+    .pane.active {
+      display: block;
+    }
     .tab {
-      padding:4px 8px; background:#444; color:#fff; cursor:pointer;
-      display:flex; align-items:center; gap:4px;
+      padding: 4px 8px;
+      background: #444;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      margin-right: 4px;
+      display: inline-flex;
+      align-items: center;
     }
-    .tab.active { background:#666; }
-    .tab .close { font-weight:bold; }
+    .tab.active {
+      background: #666;
+    }
+    .tab .close {
+      margin-left: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Overlay und Zonen – hier ändern wir pointer-events und z-Index */
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: auto;      /* <-- erlaubt Events */
+      z-index: 1000;             /* <-- immer oben */
+    }
+    .overlay .zone {
+      position: absolute;
+      border: 2px dashed rgba(200,200,200,0.5);
+      background: rgba(255,255,255,0.1);
+      pointer-events: auto;      /* <-- Zones fangen drag/drop */
+    }
+    .zone-tl { top: 0;    left: 0;    width: 50%; height: 50%; }
+    .zone-tr { top: 0;    left:50%;   width: 50%; height: 50%; }
+    .zone-bl { top:50%;   left: 0;    width: 50%; height: 50%; }
+    .zone-br { top:50%;   left:50%;   width: 50%; height: 50%; }
+    .zone-top    { top: 0;    left: 0; width:100%; height:50%; }
+    .zone-bottom { top:50%;   left: 0; width:100%; height:50%; }
+    .zone-left   { top: 0;    left: 0; width:50%;  height:100%; }
+    .zone-right  { top: 0;    left:50%; width:50%;  height:100%; }
   </style>
 </head>
 <body>
-   <div id="toolbar">
-    <div id="tabs" style="display:flex; gap:4px"></div>
+  <div id="toolbar">
+    <div id="tabbar"></div>
     <button id="new-tab">+ Tab</button>
-    <button id="split-tab">Split</button>
   </div>
-  <div id="panes" style="display:flex; flex:1; position:relative"></div>
+  <div id="panes"></div>
 
   <dialog id="conn-dialog">
     <form method="dialog">
