@@ -15,10 +15,93 @@
   const cancelBtn = document.getElementById('cancel-btn');
   const connectBtn= document.getElementById('connect-btn');
   const newTabBtn = document.getElementById('new-tab');
+  const errorDialog = document.getElementById('error-dialog');
+  const errorMsg    = document.getElementById('error-msg');
+  const errorOkBtn  = document.getElementById('error-ok-btn');
+
+  const { keyAPI } = window;
+
+  const termView = document.getElementById('terminal-view');
+  const keyView = document.getElementById('key-view');
+  const genKeyBtn = document.getElementById('gen-key-btn');
+  const keyList = document.getElementById('key-list');
+
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-terminal').onclick = () => {
+      termView.style.visibility = 'visible';
+      termView.style.position = 'relative';
+      termView.style.zIndex = '1';
+      keyView.style.display = 'none';
+    };
+
+    document.getElementById('btn-sshkeys').onclick = () => {
+      termView.style.visibility = 'hidden';
+      termView.style.position = 'absolute';
+      termView.style.zIndex = '-1';
+      keyView.style.display = 'block';
+      loadKeys();
+    };
+
+    genKeyBtn.onclick = () => {
+      keyAPI.generate().then(loadKeys);
+    };
+
+    loadStartView();
+  });
+
+
+  function loadKeys() {
+    keyAPI.list().then(keys => {
+      keyList.innerHTML = '';
+      keys.forEach((entry, index) => {
+        const div = document.createElement('div');
+        div.className = 'key-row';
+
+        const pub = document.createElement('div');
+        pub.className = 'key-pub';
+        pub.textContent = entry.publicKey;
+        pub.ondblclick = () => {
+          navigator.clipboard.writeText(entry.publicKey).catch(err => {
+            alert('Kopieren fehlgeschlagen: ' + err.message);
+          });
+        };
+
+        const del = document.createElement('button');
+        del.textContent = '🗑️';
+        del.onclick = () => {
+          keyAPI.remove(index).then(loadKeys);
+        };
+
+        div.appendChild(pub);
+        div.appendChild(del);
+        keyList.appendChild(div);
+      });
+    });
+  }
+
+  function loadStartView() {
+    const container = document.getElementById('startview');
+    container.innerHTML = '';
+    window.storeAPI.getServers().then(list => {
+      list.forEach(entry => {
+        const btn = document.createElement('button');
+        btn.textContent = `${entry.username}@${entry.host}`;
+        btn.style.cssText = 'background:#333;color:#fff;padding:8px 12px;border:none;border-radius:4px;cursor:pointer;';
+        btn.onclick = () => {
+          const connId = Date.now().toString();
+          createTab(connId, entry.host);
+          startSSH(connId, entry.host, entry.username, entry.password);
+        };
+        container.appendChild(btn);
+      });
+    });
+  }
 
   cancelBtn.onclick = () => dialog.close();
   newTabBtn.onclick = () => {
     hostIn.value = '';
+    userIn.value = 'root';
     passIn.value = '';
     dialog.showModal();
   };
@@ -83,15 +166,48 @@
   }
 
   function startSSH(connId, host, user, pass) {
-    const term = terms[connId];
-    ssh.connect({ connId, host, port:22, username:user, password:pass })
-      .then(()=>{
+    const options = {
+      connId,
+      host,
+      port: 22,
+      username: user
+    };
+    if (pass) {
+      options.password = pass;
+    }
+
+    ssh.connect(options)
+      .then(() => {
+        const term = terms[connId];
         term.onData(d => ssh.sendInput(connId, d));
-        ssh.onData(({ connId:id, data }) => {
-          if (id===connId) term.write(data);
+        ssh.onData(({ connId: id, data }) => {
+          if (id === connId) term.write(data);
         });
+        window.storeAPI.saveServer({ host, username: user, password: pass });
+        loadStartView();
+        ssh.onClose((closedId) => {
+          if (closedId === connId) removeSession(connId);
+        });
+
       })
-      .catch(err => term.write('\r\nSSH-Error: '+err.message+'\r\n'));
+      .catch(err => {
+        if (err.message.includes('getaddrinfo')) {
+          showError('Server konnte nicht aufgelöst werden.', connId);
+        } else if (err.message.includes('All configured authentication methods failed')) {
+          showError('Username oder Passwort falsch.', connId);
+        } else {
+          showError(`Verbindungsfehler: ${err.message}`, connId);
+        }
+      });
+  }
+
+  function showError(msg, connIdToClose) {
+    errorMsg.textContent = msg;
+    errorDialog.showModal();
+    errorOkBtn.onclick = () => {
+      errorDialog.close();
+      if (connIdToClose) removeSession(connIdToClose);
+    };
   }
 
   function activate(connId) {
@@ -115,4 +231,5 @@
     const ids = Object.keys(tabs);
     if (ids.length) activate(ids[ids.length-1]);
   }
+
 })();

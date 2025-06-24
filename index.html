@@ -3,77 +3,216 @@
 <head>
   <meta charset="UTF-8">
   <title>Electron PuTTY – Grid-Splits</title>
-
   <link rel="stylesheet" href="./node_modules/@xterm/xterm/css/xterm.css">
-
   <style>
-  body {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background: #1e1e1e;
-  }
-  #toolbar {
-    background: #222;
-    color: #eee;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-  }
-  #new-tab {
-    margin-left: auto;
-  }
-  #panes {
-    position: relative;
-    flex: 1;
-    overflow: hidden;
-  }
-  .pane {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: none;
-    background: #1e1e1e;
-  }
-  .pane.active {
-    display: block;
-  }
-  .tab {
-    padding: 4px 8px;
-    background: #444;
-    color: #fff;
-    cursor: pointer;
-    user-select: none;
-    margin-right: 4px;
-    display: inline-flex;
-    align-items: center;
-  }
-  .tab.active {
-    background: #666;
-  }
-  .tab .close {
-    margin-left: 6px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-</style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #1e1e1e;
+      color: #ccc;
+      font-family: sans-serif;
+    }
+    #topbar {
+      background: #222;
+      display: flex;
+      padding: 6px 8px;
+      gap: 10px;
+    }
+    #topbar button {
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #topbar button:hover {
+      background: #555;
+    }
+    #terminal-view, #key-view {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+    }
+    #terminal-view.active, #key-view.active {
+      display: flex;
+    }
+    #startview {
+      padding: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+    }
+    #toolbar {
+      background: #222;
+      color: #eee;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    #new-tab {
+      margin-left: auto;
+    }
+    #panes {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+    .pane {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: none;
+      background: #1e1e1e;
+    }
+    .pane.active {
+      display: block;
+    }
+    .tab {
+      padding: 4px 8px;
+      background: #444;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      margin-right: 4px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .tab.active {
+      background: #666;
+    }
+    .tab .close {
+      margin-left: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
+    #keygen-section {
+      padding: 1rem;
+    }
+    #public-key {
+      margin-top: 1rem;
+      background: #111;
+      color: #0f0;
+      padding: 1rem;
+      border-radius: 5px;
+      max-width: 100%;
+      max-height: 200px;
+      overflow: auto;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+
+   #key-view {
+      padding: 1rem;
+      background-color: #1e1e1e;
+      color: #ddd;
+    }
+
+    #key-view h2 {
+      margin-top: 0;
+      color: #58a6ff;
+    }
+
+    #gen-key-btn {
+      margin-bottom: 1rem;
+      padding: 8px 12px;
+      background: #444;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #key-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .key-row {
+      background: #2a2a2a;
+      padding: 1rem;
+      border-radius: 6px;
+      position: relative;
+      box-shadow: 0 0 5px #000;
+      transition: background 0.2s;
+    }
+
+    .key-row:hover {
+      background: #333;
+    }
+
+    .key-pub {
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #ccc;
+      background: #111;
+      padding: 10px;
+      border-radius: 4px;
+      user-select: all;
+      cursor: pointer;
+    }
+
+    .key-pub:hover {
+      background: #222;
+    }
+
+    .key-row button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: #ff4d4d;
+      cursor: pointer;
+      font-size: 1.2em;
+    }
+
+  </style>
 </head>
 <body>
-  <div id="toolbar">
-    <div id="tabbar"></div>
-    <button id="new-tab">+ Tab</button>
+  <div id="topbar">
+    <button id="btn-terminal">🖥️ Terminals</button>
+    <button id="btn-sshkeys">🔐 SSH-Keys</button>
   </div>
-  <div id="panes"></div>
+
+  <div id="terminal-view" class="active">
+    <div id="startview"></div>
+    <div id="toolbar">
+      <div id="tabbar"></div>
+      <button id="new-tab">+ Tab</button>
+    </div>
+    <div id="panes"></div>
+  </div>
+
+  <div id="key-view">
+    <h2>SSH-Key Verwaltung</h2>
+    <button id="gen-key-btn">➕ Neuen SSH-Key generieren</button>
+    <div id="key-list"></div>
+  </div>
 
   <dialog id="conn-dialog">
     <form method="dialog">
-      <label>Host/IP: <input type="text" id="host-input" required></label>
-      <label>User:    <input type="text" id="user-input" value="root" required></label>
+      <label>Host/IP: <input type="text" id="host-input" required></label><br>
+      <label>User: <input type="text" id="user-input" value="root" required></label><br>
       <label>Passwort (leer = Key-Auth): <input type="password" id="pass-input"></label>
       <menu>
         <button id="cancel-btn" value="cancel">Abbrechen</button>
         <button id="connect-btn" value="connect">Connect</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="error-dialog">
+    <form method="dialog">
+      <p id="error-msg">Fehler</p>
+      <menu>
+        <button id="error-ok-btn" value="ok">OK</button>
       </menu>
     </form>
   </dialog>
