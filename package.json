@@ -1,11 +1,11 @@
 {
-  "name": "modern-putty",
-  "productName": "modern-putty",
+  "name": "Test",
+  "productName": "Test",
   "description": "My Electron application description",
   "keywords": [],
   "main": "./main.js",
   "version": "1.0.0",
-  "author": "Phillip PC",
+  "author": "fuerpa2",
   "scripts": {
     "start": "electron ."
   },
